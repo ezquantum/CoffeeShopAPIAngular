@@ -1,9 +1,12 @@
 venv/
+node_modules/*
+node_modules
 .vscode/
 __pycache__/
 test.db
 venv
-.vscode
+venv/*
+/node_modules/*
 __pycache__
 # OS generated files #
 ######################
@@ -14,4 +17,3 @@ __pycache__
 .Trashes
 ehthumbs.db
 Thumbs.db
-venv

@@ -1,9 +1,10 @@
 import os
 from sqlalchemy import Column, String, Integer
 from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 import json
 
-database_name = "trivia_test"
+database_name = "testcoffee"
 #database_filename = "database.db"
 project_dir = os.path.dirname(os.path.abspath(__file__))
 #database_path = "postgres:///{}".format(os.path.join(project_dir, database_filename))

@@ -35,7 +35,7 @@ def get_drinks():
     except:
         abort(500)
 
-
+#Require auth for the long form get
 @app.route('/drinks-detail', methods=['GET'])
 @requires_auth('get:drinks-detail')
 def get_detail(token):
@@ -43,7 +43,7 @@ def get_detail(token):
     try:
         drinks = Drink.query.all()
         menu = [drink.long() for drink in drinks]
-
+#return success
         return jsonify({
             'success': True, 
             'drinks': menu
@@ -96,6 +96,7 @@ def create_drink(jwt):
         returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the updated drink
             or appropriate status code indicating reason for failure
     '''
+    #patch drink by id
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
 def patch_drink(jwt, drink_id):
@@ -106,7 +107,7 @@ def patch_drink(jwt, drink_id):
 
     drink = Drink.query.filter_by(id=drink_id).one_or_none()
 
-
+#if drink id doesnt exist, abort abort
     if drink is None:
         abort(404)
 
@@ -116,7 +117,7 @@ def patch_drink(jwt, drink_id):
     try:
         drink.title = title
         drink.update()
-
+#define success
         return jsonify({
             'success': True,
             'drinks': [drink.long()],
@@ -135,6 +136,8 @@ def patch_drink(jwt, drink_id):
         returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
             or appropriate status code indicating reason for failure
     '''
+
+    #delete by id
 @app.route('/drinks/<int:drink_id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
 def delete_drink(jwt, drink_id):
@@ -146,7 +149,7 @@ def delete_drink(jwt, drink_id):
 
     try:
         drink.delete()
-
+#return success
         return jsonify({
             'success': True,
             'deleted': drink_id,

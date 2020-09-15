@@ -36,7 +36,7 @@ def get_drinks():
         abort(500)
 
 
-@app.route('/drinks-detail')
+@app.route('/drinks-detail', methods=['GET'])
 @requires_auth('get:drinks-detail')
 def get_detail(token):
 
@@ -70,7 +70,7 @@ def create_drink(jwt):
         data = request.get_json()
         title = data.get('title', None)
         recipe = data.get('recipe', None)
-
+        
         #insert
         drink = Drink(title=title, recipe=json.dumps(recipe))
         drink.insert()
@@ -135,7 +135,7 @@ def patch_drink(jwt, drink_id):
         returns status code 200 and json {"success": True, "delete": id} where id is the id of the deleted record
             or appropriate status code indicating reason for failure
     '''
-@app.route('/drinks', methods=['DELETE'])
+@app.route('/drinks/<int:drink_id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
 def delete_drink(jwt, drink_id):
 

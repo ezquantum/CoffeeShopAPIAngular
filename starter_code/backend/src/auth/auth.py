@@ -5,64 +5,86 @@ from jose import jwt
 from urllib.request import urlopen
 
 
-AUTH0_DOMAIN = 'coffestack.us.auth0.com'
+AUTH0_DOMAIN = 'coffeestacker.us.auth0.com'
 ALGORITHMS = ['RS256']
-API_AUDIENCE = 'coffee'
+API_AUDIENCE = 'coffeeapi'
 
-
-## AuthError Exception
 
 class AuthError(Exception):
+    """AuthError Exception
+    A standardized way to communicate auth failure modes
+    """
+
     def __init__(self, error, status_code):
         self.error = error
         self.status_code = status_code
 
 
-### = Done
-
-
-#Defined global method
+# Authorization Header
 def get_token_auth_header():
-    #Attempt to retrieve header from request
-    if 'Authorization' not in request.headers:
-        raise AuthError({
-            'code': 'Unauthorized Request', 
-            'description': 'Please log-in with the correct credentials.'
-            }, 401)
-    
-    #Splits the header into two parts
-    auth_header = request.headers['Authorization']
-    header_parts= auth_header.split(' ')
-    if len(header_parts) !=2:
-        raise AuthError({
-            'code': 'Unauthorized Request', 
-            'description': 'Please log-in with the correct credentials.'
-            }, 401)
+    """
+    Obtains the Access Token from the Authorization Header
+    """
 
-    elif header_parts[0].lower() != 'bearer':
+    # get auth from the header
+    auth = request.headers.get('Authorization', None)
+    if not auth:
         raise AuthError({
-            'code': 'Unauthorized Request', 
-            'description': 'Please log-in with the correct credentials.'
-            }, 401)
-    #Returns the token portion of header
-    return header_parts [1]
+            'code': 'authorization_header_missing',
+            'description': 'Authorization header is expected.'
+        }, 401)
 
+    # split keyword and token
+    parts = auth.split()
+
+    # Verify bearer is there
+    if parts[0].lower() != 'bearer':
+        raise AuthError({
+            'code': 'invalid_header',
+            'description': 'Authorization header must begin with "Bearer".'
+        }, 401)
+
+    # auth header MUST be two parts
+    elif len(parts) == 1:
+        raise AuthError({
+            'code': 'invalid_header',
+            'description': 'Token not found.'
+        }, 401)
+
+    # auth header must have 2 parts
+    elif len(parts) > 2:
+        raise AuthError({
+            'code': 'invalid_header',
+            'description': 'Authorization header must be bearer token.'
+        }, 401)
+
+    # get token from parts and return
+    token = parts[1]
+    return token
 
 
 def check_permissions(permission, payload):
+    """
+    Ensures that permission exists in payload
+    """
+
+    # Ensures that there is permissions field in the payload
     if 'permissions' not in payload:
         raise AuthError({
             'code': 'invalid_claims',
             'description': 'Permissions not included in JWT.'
-            }, 400)
+        }, 400)
 
+    # Ensures that the specific permission exists
     if permission not in payload['permissions']:
         raise AuthError({
-            'code':'unauthorized',
+            'code': 'unauthorized',
             'description': 'Permission not found.'
-    }, 403)
+        }, 401)
 
+    # if conditions pass return true
     return True
+
 
 def verify_decode_jwt(token):
     '''
@@ -74,24 +96,16 @@ def verify_decode_jwt(token):
     jwks = json.loads(jsonurl.read())
     unverified_header = jwt.get_unverified_header(token)
 
-    #fake
-    rsa_key = {'kty': 'RSA', 
-            'use': 'sig', 
-            'n': '1Mu2yp5nToZjwO8JGoeV_ccBEDkbJ_aBRe1WJ-juJtcYOzyMgnGVujqv22WbjDj0blmJuP-EZ1ym0PzG2TIrnYk6mHsyVfjz-aQB7FBcTxl4CCnREN3gXQS2-6udmVGl0awZublowsFYP5vEfF_Go4_ir43RHMr_kxMQO4l-ipk28e1-ymOqsjyXv_ovtyNC0eS7_f1x2dMIRZ6_5ck5V4BxW57hm-u59WjM2O0rCYbgO_gOqTyXlYN0lQ35sECutCKgRmfWjI-Q8huSNec6srUDQ3V3YlKhW5Wu23dOYyLtav8V6YvgsgM3R9LTHcKTvHfYDyVvkiyZa0Eg794Mfw', 
-            'e': 'AQAB', 
-            'kid': '9E2wuF5V9hhj1uMiQq0Dj' 
-           }
+    rsa_key = {}
 
     # Ensure that token header has the kid field
-
     if 'kid' not in unverified_header:
         raise AuthError({
             'code': 'invalid_header',
             'description': 'Authorization malformed.'
         }, 401)
-    
+
     for key in jwks['keys']:
-       
         if key['kid'] == unverified_header['kid']:
             rsa_key = {
                 'kty': key['kty'],
@@ -100,22 +114,9 @@ def verify_decode_jwt(token):
                 'n': key['n'],
                 'e': key['e']
             }
-
-
-
-
     if rsa_key:
-        payload = jwt.decode(
-                token,
-                rsa_key,
-                algorithms=ALGORITHMS,
-                audience=API_AUDIENCE,
-                issuer='https://' + AUTH0_DOMAIN + '/'
-        )
-        print('payload is')
-        print(payload)
         try:
-            # decode token with the constants    
+            # decode token with constant
             payload = jwt.decode(
                 token,
                 rsa_key,
@@ -123,10 +124,10 @@ def verify_decode_jwt(token):
                 audience=API_AUDIENCE,
                 issuer='https://' + AUTH0_DOMAIN + '/'
             )
-            print(payload)
+
             return payload
 
-        # raise errors
+        # raise errors where needed
         except jwt.ExpiredSignatureError:
             raise AuthError({
                 'code': 'token_expired',
@@ -149,68 +150,11 @@ def verify_decode_jwt(token):
                 'description': 'Unable to find the appropriate key.'
     }, 400)
 
-# def verify_decode_jwt(token):
-#     #retrieve public key from Auth0
-#     jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
-#     jwks = json.loads(jsonurl.read())
-
-#     # Retrieve data from header
-#     unverified_header = jwt.get_unverified_header(token)
-
-#     #Choose the KEY
-#     rsa_key = {}
-#     if 'kid' not in unverified_header:
-#         raise AuthError({
-#             'code':'invalid_header',
-#             'description': 'Authorization malformed.'
-#     }, 401)
-
-#     for key in jwks['keys']:
-#         if key['kid'] == unverified_header['kid']:
-#             rsa_key = {
-#                 'kty': key['kty'],
-#                 'kid': key['kid'],
-#                 'use': key['use'],
-#                 'n': key['n'],
-#                 'e': key['e']
-#                 }
-
-#     if rsa_key:
-#         try:   
-#             # USE THE KEY TO VALIDATE THE JWT
-#             payload = jwt.decode(
-#                 token,
-#                 rsa_key,
-#                 algorithms=ALGORITHMS,
-#                 audience=API_AUDIENCE,
-#                 issuer='https://' + AUTH0_DOMAIN + '/'
-#             )
-#             return payload
-        
-#         # raise errors for common exceptions
-#         except jwt.ExpiredSignatureError:
-#             raise AuthError({
-#                 'code': 'token_expired',
-#                 'description': 'Token expired.'
-#                 }, 401)
-
-#             except jwt.JWTClaimsError:
-#                 raise AuthError({
-#                     'code': 'invalid_claims',
-#                     'description': 'Incorrect claims. Please, ' +
-#                     'check the audience and issuer.'
-#                     }, 401)
-#             except Exception:
-#                 raise AuthError({
-#                     'code': 'invalid_header',
-#                     'description': 'Unable to parse authentication token.'
-#                     }, 400)
-#                 raise AuthError({
-#                     'code': 'invalid_header',
-#                     'description': 'Unable to find the appropriate key.'
-#                     }, 400)
 
 def requires_auth(permission=''):
+    '''
+    authhentication decorator function
+    '''
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -221,4 +165,3 @@ def requires_auth(permission=''):
 
         return wrapper
     return requires_auth_decorator
-
